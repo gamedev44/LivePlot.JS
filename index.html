@@ -1,1 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading LivePlot HMI...</title>
 
+    <!-- SEO and Social Sharing Meta Tags -->
+    <meta name="description" content="Loading the interactive, real-time HMI data plotting tool.">
+    <meta name="author" content="Asterisk">
+    <meta property="og:title" content="LivePlot: HMI Home Portal">
+    <meta property="og:description" content="Please wait while the HMI data interface loads.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://i.ibb.co/dJWjM1Qy/image-2025-07-06-191637289.png">
+
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            opacity: 1;
+            transition: opacity 0.75s ease-in-out; /* Fade-out transition */
+        }
+        
+        #logo-container img {
+            /* The drop-shadow filter creates a shadow that respects the image's transparency */
+            filter: drop-shadow(0 10px 8px rgba(0, 255, 255, 0.09)) drop-shadow(0 4px 3px rgba(0, 255, 255, 0.09));
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="logo-container" class="flex flex-col items-center text-center gap-4">
+        <!-- The logo is displayed here with rounded corners -->
+        <img 
+            id="logo" 
+            src="https://i.ibb.co/dJWjM1Qy/image-2025-07-06-191637289.png" 
+            alt="Company Logo" 
+            class="max-w-xs w-full h-auto rounded-2xl" /* Added rounded-2xl for more prominent rounded corners */
+            onerror="this.style.display='none'; document.getElementById('fallbackText').style.display='block';"
+        >
+        
+        <!-- The new tagline -->
+        <h2 class="text-lg font-medium text-cyan-300 tracking-wider">An interactive, real-time HMI data plotting tool with import/export functionality, built with HTML, Tailwind CSS, and Chart.js.</h2>
+
+        <!-- This text will show if the image fails to load -->
+        <div id="fallbackText" style="display:none;">
+             <h1 class="text-xl font-medium text-gray-300">Loading LivePlot HMI...</h1>
+        </div>
+    </div>
+
+    <script>
+        // This script handles the fade-out and redirect.
+        window.onload = function() {
+            // Wait for a bit to show the loading screen (e.g., 2500ms = 2.5 seconds)
+            const loadingTime = 2500;
+            const fadeOutTime = 750; // Must match the CSS transition time
+
+            setTimeout(() => {
+                // Start the fade-out by changing the body's opacity
+                document.body.style.opacity = '0';
+
+                // After the fade-out animation is complete, redirect to the main app
+                setTimeout(() => {
+                    // IMPORTANT: Make sure your main HMI file is named "liveplot.html"
+                    // and is in the same directory as this index.html file.
+                    window.location.href = 'liveplot.html';
+                }, fadeOutTime);
+
+            }, loadingTime);
+        };
+    </script>
+
+</body>
+</html>
