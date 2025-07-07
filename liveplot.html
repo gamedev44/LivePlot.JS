@@ -1,1 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fully Responsive HMI Plot</title>
+    
+    <!-- SEO and Social Sharing Meta Tags -->
+    <meta name="description" content="An interactive, real-time HMI data plotting tool with import/export functionality, built with HTML, Tailwind CSS, and Chart.js.">
+    <meta name="author" content="Gemini">
+    <meta property="og:title" content="Interactive HMI Data Plot">
+    <meta property="og:description" content="Visualize live and imported time-series data with this responsive HMI interface.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://placehold.co/1200x630/000000/00FFFF/png?text=Live+HMI+Plot">
 
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+        }
+        .chart-container {
+            background-color: #000000;
+            border-radius: 0.75rem;
+            padding: 1rem sm:p-6;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #374151;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #1F2937;
+            color: #D1D5DB;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.is-visible .modal-content {
+            transform: scale(1);
+        }
+        .hmi-button {
+            background-color: #374151;
+            color: #F3F4F6;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #4B5563;
+            transition: background-color 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on touch devices */
+        }
+        .hmi-button:hover {
+            background-color: #4B5563;
+        }
+        .hmi-button:active {
+            transform: scale(0.98);
+        }
+        .hmi-button:disabled {
+            background-color: #1F2937;
+            color: #6B7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2 sm:p-4">
+
+    <!-- Custom Alert/Message Box Modal -->
+    <div id="messageModal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <p id="messageText" class="text-lg mb-6"></p>
+            <button id="closeMessageBtn" class="hmi-button bg-cyan-600 hover:bg-cyan-700">OK</button>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal-overlay is-visible">
+        <div class="modal-content">
+            <h2 class="text-xl sm:text-2xl font-bold text-white mb-4">Welcome to the Interactive HMI!</h2>
+            <p class="mb-4 text-sm sm:text-base">This tool allows you to visualize time-series data.</p>
+            <h3 class="text-lg font-semibold text-white mb-2">How to Import Data</h3>
+            <p class="mb-1 text-sm sm:text-base">1. Click 'Stop' to pause the live feed.</p>
+            <p class="mb-1 text-sm sm:text-base">2. Paste your data into the text area below the chart.</p>
+            <p class="mb-4 text-sm sm:text-base">3. The data should be in CSV format: <code class="bg-gray-700 p-1 rounded">timestamp,value</code>. Each entry must be on a new line.</p>
+            <div class="bg-gray-800 p-2 rounded mb-4 text-xs sm:text-sm">
+                <p>Example:</p>
+                <pre>10:30:01,0.5<br>10:30:02,-0.2<br>10:30:03,0.8</pre>
+            </div>
+            <p class="mb-6 text-sm sm:text-base">You can also start the live feed, export the current data, or clear the chart using the controls.</p>
+            <button id="closeWelcomeBtn" class="hmi-button w-full bg-cyan-600 hover:bg-cyan-700">Got it, let's start!</button>
+        </div>
+    </div>
+
+    <main class="w-full max-w-7xl flex flex-col gap-4 sm:gap-6">
+        <div class="chart-container">
+            <canvas id="livePlot"></canvas>
+        </div>
+
+        <div class="bg-black border border-gray-700 p-4 rounded-lg flex flex-col lg:flex-row gap-4">
+            <div class="flex flex-wrap gap-2 justify-center">
+                <button id="toggleLiveBtn" class="hmi-button flex-grow sm:flex-grow-0">Stop Live Data</button>
+                <button id="exportBtn" class="hmi-button flex-grow sm:flex-grow-0">Export CSV</button>
+                <button id="clearBtn" class="hmi-button flex-grow sm:flex-grow-0">Clear Chart</button>
+            </div>
+            <div class="flex-grow flex flex-col sm:flex-row gap-2">
+                 <textarea id="dataInput" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-cyan-500" rows="3" placeholder="Paste CSV data here... (e.g., 12:00:00,0.5)"></textarea>
+                 <button id="importBtn" class="hmi-button">Import</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('livePlot').getContext('2d');
+            const maxDataPoints = 30;
+            let liveDataInterval;
+            let isLive = true;
+
+            const toggleLiveBtn = document.getElementById('toggleLiveBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const importBtn = document.getElementById('importBtn');
+            const dataInput = document.getElementById('dataInput');
+            
+            const welcomeModal = document.getElementById('welcomeModal');
+            const closeWelcomeBtn = document.getElementById('closeWelcomeBtn');
+            const messageModal = document.getElementById('messageModal');
+            const messageText = document.getElementById('messageText');
+            const closeMessageBtn = document.getElementById('closeMessageBtn');
+
+            const initialLabels = ['10:00:00', '10:00:01', '10:00:02', '10:00:03', '10:00:04'];
+            const initialData = [0.1, -0.3, 0.4, 0.2, -0.1];
+
+            const liveChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [...initialLabels],
+                    datasets: [{
+                        label: 'Live Data',
+                        data: [...initialData],
+                        borderColor: '#00FFFF',
+                        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#00FFFF',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Live HMI Data Feed',
+                            color: '#FFFFFF',
+                            font: { size: 20, weight: 'bold' },
+                            padding: { bottom: 20 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (HH:MM:SS)',
+                                color: '#9CA3AF',
+                                font: { size: 14 }
+                            },
+                            ticks: {
+                                color: '#D1D5DB',
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: { color: 'rgba(0, 255, 0, 0.15)' }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value',
+                                color: '#9CA3AF',
+                                font: { size: 14 }
+                            },
+                            min: -1,
+                            max: 1,
+                            ticks: {
+                                color: '#D1D5DB',
+                                stepSize: 0.25
+                            },
+                            grid: { color: 'rgba(0, 255, 0, 0.15)' }
+                        }
+                    }
+                }
+            });
+
+            function showMessage(message) {
+                messageText.textContent = message;
+                messageModal.classList.add('is-visible');
+            }
+
+            function addData() {
+                const now = new Date();
+                const timestamp = now.toTimeString().split(' ')[0];
+                const newData = (Math.random() * 2 - 1);
+                updateChartData([timestamp], [newData], true);
+            }
+
+            function updateChartData(labels, dataPoints, append = false) {
+                if (!append) {
+                    liveChart.data.labels = [];
+                    liveChart.data.datasets[0].data = [];
+                }
+                liveChart.data.labels.push(...labels);
+                liveChart.data.datasets[0].data.push(...dataPoints);
+                if (append) {
+                    while (liveChart.data.labels.length > maxDataPoints) {
+                        liveChart.data.labels.shift();
+                        liveChart.data.datasets[0].data.shift();
+                    }
+                }
+                liveChart.update('none');
+            }
+
+            function startLiveData() {
+                if (liveDataInterval) return;
+                liveDataInterval = setInterval(addData, 1000);
+                isLive = true;
+                toggleLiveBtn.textContent = 'Stop Live Data';
+                toggleLiveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            }
+
+            function stopLiveData() {
+                clearInterval(liveDataInterval);
+                liveDataInterval = null;
+                isLive = false;
+                toggleLiveBtn.textContent = 'Start Live Data';
+                toggleLiveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+            
+            startLiveData();
+
+            function importData() {
+                stopLiveData();
+                const text = dataInput.value.trim();
+                if (!text) {
+                    showMessage("Input area is empty. Please paste data to import.");
+                    return;
+                }
+                const newLabels = [];
+                const newDataPoints = [];
+                const lines = text.split('\n');
+                try {
+                    lines.forEach((line, index) => {
+                        const parts = line.split(',');
+                        if (parts.length !== 2) throw new Error(`Invalid format on line ${index + 1}: "${line}"`);
+                        const label = parts[0].trim();
+                        const value = parseFloat(parts[1].trim());
+                        if (isNaN(value)) throw new Error(`Invalid number on line ${index + 1}: "${line}"`);
+                        newLabels.push(label);
+                        newDataPoints.push(value);
+                    });
+                    updateChartData(newLabels, newDataPoints, false);
+                    dataInput.value = '';
+                    showMessage("Data imported successfully!");
+                } catch (error) {
+                    showMessage(`Error parsing data: ${error.message}`);
+                }
+            }
+
+            function exportData() {
+                if (liveChart.data.labels.length === 0) {
+                    showMessage("Chart is empty. Nothing to export.");
+                    return;
+                }
+                const labels = liveChart.data.labels;
+                const data = liveChart.data.datasets[0].data;
+                let csvContent = "data:text/csv;charset=utf-8,Timestamp,Value\n";
+                labels.forEach((label, index) => {
+                    csvContent += `${label},${data[index]}\n`;
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "hmi_data_export.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            function clearChart() {
+                stopLiveData();
+                updateChartData([], [], false);
+                showMessage("Chart has been cleared.");
+            }
+
+            toggleLiveBtn.addEventListener('click', () => {
+                isLive ? stopLiveData() : startLiveData();
+            });
+            importBtn.addEventListener('click', importData);
+            exportBtn.addEventListener('click', exportData);
+            clearBtn.addEventListener('click', clearChart);
+            
+            closeWelcomeBtn.addEventListener('click', () => welcomeModal.classList.remove('is-visible'));
+            closeMessageBtn.addEventListener('click', () => messageModal.classList.remove('is-visible'));
+        });
+    </script>
+
+</body>
+</html>
