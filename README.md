@@ -33,9 +33,9 @@ An interactive, real-time HMI (Human-Machine Interface) data plotting tool with 
 
 ## Live Demo
 
-[**Click here to use the LivePlot HMI in your browser**](https://example.com) 
+[**Click here to use the LivePlot HMI in your browser**](https://gamedev44.github.io/LivePlot.JS/) 
 
-*(Note: Replace `https://example.com` with your actual deployment link, e.g., from GitHub Pages.)*
+
 
 ---
 
@@ -81,7 +81,7 @@ The project consists of two main files:
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/gamedev44/LivePlot.JS/blob/main/LICENSE) file for details.
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
